@@ -19,6 +19,16 @@ const firebaseConfig = {
    measurementId: "G-L6H014ZLGT"
 };
 
+// const firebaseConfig = {
+//    apiKey: "AIzaSyDTp9E0PCkG6VRWr1Mc2H6zpoFiBZjRKjU",
+//    authDomain: "aerobic-canto-297605.firebaseapp.com",
+//    projectId: "aerobic-canto-297605",
+//    storageBucket: "aerobic-canto-297605.appspot.com",
+//    messagingSenderId: "862300201270",
+//    appId: "1:862300201270:web:dd69b2173c7c0d64955397",
+//    measurementId: "G-ZE2YJJH2N8"
+//  }; 
+
 // Configure FirebaseUI.
 const uiConfig = {
    // Popup signin flow rather than redirect flow.

@@ -11,7 +11,7 @@ import { getCategory } from '../utils/categories';
 
 // Table component that displays entries on home screen
 
-export default function EntryTable({ entries }) {
+export default function EntryTable({ entries, user}) {
    return (
       <TableContainer component={Paper}>
          <Table sx={{ minWidth: 650 }} aria-label="simple table">
@@ -37,7 +37,7 @@ export default function EntryTable({ entries }) {
                      <TableCell align="right">{entry.user}</TableCell>
                      <TableCell align="right">{getCategory(entry.category).name}</TableCell>
                      <TableCell sx={{ "padding-top": 0, "padding-bottom": 0 }} align="right">
-                        <EntryModal entry={entry} type="edit" />
+                        <EntryModal entry={entry} type="edit" user={user} />
                      </TableCell>
                   </TableRow>
                ))}

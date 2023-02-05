@@ -1,5 +1,7 @@
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
+import DeleteIcon from '@mui/icons-material/Delete';
 import Button from '@mui/material/Button';
+import Box from '@mui/material/Box';
 import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
@@ -11,9 +13,10 @@ import MenuItem from '@mui/material/MenuItem';
 import Select from '@mui/material/Select';
 import TextField from '@mui/material/TextField';
 import * as React from 'react';
-import { useState } from 'react';
+import { useState, useContext } from 'react';
 import { categories } from '../utils/categories';
-import { addEntry } from '../utils/mutations';
+import { addEntry, updateEntry, deleteEntry } from '../utils/mutations';
+import { AlertContext } from '../App';
 
 // Modal component for individual entries.
 
@@ -34,7 +37,15 @@ export default function EntryModal({ entry, type, user }) {
    const [name, setName] = useState(entry.name);
    const [link, setLink] = useState(entry.link);
    const [description, setDescription] = useState(entry.description);
-   const [category, setCategory] = React.useState(entry.category);
+   const [category, setCategory] = useState(entry.category);
+
+   // Input error states
+   const [nameError, setNameError] = useState(false);
+   const [linkError, setLinkError] = useState(false);
+   const [descError, setDescError] = useState(false);
+
+   // Consuming the context established in App
+   const alert = useContext(AlertContext);
 
    // Modal visibility handlers
 
@@ -51,9 +62,9 @@ export default function EntryModal({ entry, type, user }) {
    };
 
    // Mutation handlers
-
-   const handleAdd = () => {
-      const newEntry = {
+   // Helper function to generate the entry in the modal
+   const fromEntry = () => {
+      return {
          name: name,
          link: link,
          description: description,
@@ -61,14 +72,91 @@ export default function EntryModal({ entry, type, user }) {
          category: category,
          userid: user?.uid,
       };
+   }
 
-      addEntry(newEntry).catch(console.error);
-      handleClose();
+   // Ensure data is not empty or all whitespace
+   //    return true is the all data is valid
+   const validateData = () => {
+      let counter = 0;
+      if (!name.replaceAll(" ", "")) {
+         setNameError(true);
+         counter += 1;
+      }
+      else {
+         setNameError(false);
+      }
+      if (!link.replaceAll(" ", "")) {
+         setLinkError(true);
+         counter += 1;
+      }
+      else {
+         setLinkError(false);
+      }
+      if (!description.replaceAll(" ", "")) {
+         setDescError(true);
+         counter += 1;
+      }
+      else {
+         setDescError(false);
+      }
+      return !counter;
+   }
+
+   const handleAdd = () => {
+      if (validateData()) {
+         const newEntry = fromEntry();
+         // Added more error handling
+         addEntry(newEntry)
+            .then(() => {
+               alert.setAlertMessage("Succesfully added your entry!");
+               alert.setSuccess(true);
+            })
+            .catch(() => {
+               alert.setAlertMessage("Couldn't add your entry!");
+               alert.setSuccess(false);
+            })
+            .finally(() => {
+               alert.setAlert(true);
+               handleClose();
+            })
+      }
    };
 
-   // TODO: Add Edit Mutation Handler
+   const handleEdit = () => {
+      if (validateData()) {
+         const input = fromEntry();
+         const updatedEntry = {...input, id: entry.id};
+         updateEntry(updatedEntry)
+            .then(() => {
+               alert.setAlertMessage("Succesfully edited your entry!");
+               alert.setSuccess(true);
+            })
+            .catch(() => {
+               alert.setAlertMessage("Couldn't edit your entry!");
+               alert.setSuccess(false);
+            })
+            .finally(() => {
+               alert.setAlert(true);
+               handleClose();
+            })
+      }
+   }
 
-   // TODO: Add Delete Mutation Handler
+   const handleDelete = () => {
+      deleteEntry(entry)
+         .then(() => {
+            alert.setAlertMessage("Succesfully deleted your entry!");
+            alert.setSuccess(true);
+         })
+         .catch(() => {
+            alert.setAlertMessage("Couldn't delete your entry!");
+            alert.setSuccess(false);
+         })
+         .finally(() => {
+            alert.setAlert(true);
+            handleClose();
+         })
+   }
 
    // Button handlers for modal opening and inside-modal actions.
    // These buttons are displayed conditionally based on if adding or editing/opening.
@@ -78,7 +166,7 @@ export default function EntryModal({ entry, type, user }) {
       type === "edit" ? <IconButton onClick={handleClickOpen}>
          <OpenInNewIcon />
       </IconButton>
-         : type === "add" ? <Button variant="contained" onClick={handleClickOpen}>
+         : type === "add" ? <Button sx={{height: '100%'}} variant="contained" onClick={handleClickOpen}>
             Add entry
          </Button>
             : null;
@@ -86,7 +174,11 @@ export default function EntryModal({ entry, type, user }) {
    const actionButtons =
       type === "edit" ?
          <DialogActions>
+            <Box mr={'auto'}>
+               <Button variant="contained" color="error" startIcon={<DeleteIcon />} onClick={handleDelete}>Delete</Button>
+            </Box>
             <Button onClick={handleClose}>Cancel</Button>
+            <Button variant="contained" onClick={handleEdit}>Edit Entry</Button>
          </DialogActions>
          : type === "add" ?
             <DialogActions>
@@ -110,6 +202,8 @@ export default function EntryModal({ entry, type, user }) {
                   variant="standard"
                   value={name}
                   onChange={(event) => setName(event.target.value)}
+                  error={nameError}
+                  helperText={nameError ? "required" : ""}
                />
                <TextField
                   margin="normal"
@@ -120,6 +214,8 @@ export default function EntryModal({ entry, type, user }) {
                   variant="standard"
                   value={link}
                   onChange={(event) => setLink(event.target.value)}
+                  error={linkError}
+                  helperText={linkError ? "required" : ""}
                />
                <TextField
                   margin="normal"
@@ -131,6 +227,8 @@ export default function EntryModal({ entry, type, user }) {
                   maxRows={8}
                   value={description}
                   onChange={(event) => setDescription(event.target.value)}
+                  error={descError}
+                  helperText={descError ? "required" : ""}
                />
 
                <FormControl fullWidth sx={{ "margin-top": 20 }}>
@@ -142,7 +240,7 @@ export default function EntryModal({ entry, type, user }) {
                      label="Category"
                      onChange={(event) => setCategory(event.target.value)}
                   >
-                     {categories.map((category) => (<MenuItem value={category.id}>{category.name}</MenuItem>))}
+                     {categories.map((category) => (<MenuItem key={category.id} value={category.id}>{category.name}</MenuItem>))}
                   </Select>
                </FormControl>
             </DialogContent>
